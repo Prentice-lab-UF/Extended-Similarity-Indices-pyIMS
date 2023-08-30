@@ -4,22 +4,6 @@ import h5py
 import hdf5plugin # optional
 import matplotlib.pyplot as plt
 
-def normalize(raw_spc, function = "RMS"):
-    norm_spc = raw_spc
-    l = len(raw_spc.transpose())
-    
-    if function == "RMS":
-        for i, pixel in enumerate(norm_spc):
-            sum_squared = np.sum(pixel**2)
-            mean_square = sum_squared/l
-            RMS = mean_square**(1/2)
-            pixel/=RMS
-    if function == "TIC":
-        for i, pixel in enumerate(norm_spc):
-            TIC = np.sum(pixel)
-            pixel/=TIC   
-    return norm_spc
-
 
 # Define name of .sbd file to extract spectrum data
 name = "2021-07-27_NE_MB_posMS_DHBsublim.sbd"
@@ -42,25 +26,16 @@ save_path = 'Fingerprint_data/2021-07-27_NE_MB_posMS_DHBsublim/total_fingerprint
     # localTIC: for each pixel/spectrum, all intensities in the spectrum are added and then each intensity is divided by the sum
     # globalTIC: finds the sum of intenisties for every spectrum and divides all intensity values by the largest sum
     # PCA: Normalize each mz bin with repect to the average intensity of the bin (0-centered data used for PCA calculation)
-pre_norm = None
+
 normalization = "local"
+
+
+
 
 # Using h5py moule open .sbd file and extract all raw spectra from imaging data set defined as raw_arr
 with h5py.File(f'{folder}{name}', mode="r") as h5:
     # load intensity array
     raw_arr = h5["SpectraGroups/InitialMeasurement/spectra"][:]
-
-# Normalizes spectra using normalize function
-if not pre_norm == None:
-    raw_arr = normalize(raw_arr, function = pre_norm)
-
-# Sets pre_norm to "" for file name if None is selected
-else:
-    pre_norm = ""
-
-
-
-
 
 # Normalizes the spectra on a scale of 0-1 depending on which normalization method was chosen
 if normalization == "global":
@@ -121,7 +96,7 @@ total_fingerprints = np.where(renorm_int > int_threshold, 1, 0)
 # file name notation is as follows
 # {.sbd name}_{normalization method}_it{int_threshold}
 # it is an acronym for intensity threshold to shorten file name
-output_name = f"{name.split('.')[0]}_{str(pre_norm)}{normalization}_it{int_threshold_str}"
+output_name = f"{name.split('.')[0]}_{normalization}_it{int_threshold_str}"
 
 # Save binary fingerprints using .sbd file name, normalization method, and int_threshold as the save file name
 np.save(f"{save_path}{output_name}", total_fingerprints)
